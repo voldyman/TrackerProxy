@@ -40,9 +40,6 @@ class Server {
     udp::socket socket;
     unsigned short port;
 
-    udp::endpoint remote_endpoint;
-    boost::array<char, 1024> recv_buf;
-
   public:
     Server(std::shared_ptr<boost::asio::io_service> service,
            unsigned short port);
@@ -50,8 +47,8 @@ class Server {
 
   private:
     void accept_connection();
-    void handle_connection(const boost::system::error_code& error,
-                           std::size_t bytes_read);
+    void handle_connection(const boost::system::error_code&, std::size_t,
+                           boost::array<char, 1024>, udp::endpoint);
 
 };
 

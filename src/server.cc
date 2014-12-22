@@ -41,22 +41,51 @@ void Server::start()
 
 void Server::accept_connection()
 {
-  this->socket.async_receive_from(boost::asio::buffer(this->recv_buf),
-                                  this->remote_endpoint,
-                                  boost::bind<void>(&Server::handle_connection, this,
-                                                    boost::asio::placeholders::error,
-                                                    boost::asio::placeholders::bytes_transferred));
+  boost::array<char, 1024> reciv_buf;
+  udp::endpoint endpoint;
+
+  auto callback = boost::bind<void>(&Server::handle_connection, this,
+                                    boost::asio::placeholders::error,
+                                    boost::asio::placeholders::bytes_transferred,
+                                    reciv_buf, endpoint);
+  
+  this->socket.async_receive_from(boost::asio::buffer(reciv_buf),
+                                  endpoint, callback);
 }
 
 void Server::handle_connection(const boost::system::error_code& error,
-                               std::size_t bytes_read)
+                               std::size_t bytes_read, boost::array<char, 1024> recv_buf,
+                               udp::endpoint endpoint)
 {
-  std::string data;
-  std::copy(this->recv_buf.begin(), this->recv_buf.begin() + bytes_read,
-            std::back_inserter(data));
-  
-  std::cout << "Got Connection with data: " << data << std::endl;
-
   // continue accepting connections
   this->accept_connection();
+    
+  std::vector<char> data(std::begin(recv_buf), std::begin(recv_buf) + bytes_read);
+
+  std::cout << "Got Connection with data: " << data[0] << " " << data.size() << std::endl;
+
+  udp::resolver resolver(*this->io_service);
+  udp::resolver::query query("tracker.istole.it", "80");
+
+  udp::endpoint server_endpoint;
+
+  try {
+    server_endpoint = *resolver.resolve(query);
+  } catch(boost::system::system_error& error) {
+    std::cout<< error.what() << std::endl;
+    return;
+  }
+
+  std::cout << "Sending data" << std::endl;
+  std::shared_ptr<udp::socket> server_socket = std::make_shared<udp::socket>(udp::socket(*this->io_service));
+  server_socket->open(udp::v4());
+  server_socket->send_to(boost::asio::buffer(data), server_endpoint);
+  std::cout << "Sent, waiting " << std::endl;
+  boost::array<char, 128> server_recv_buf;
+  udp::endpoint sender_endpoint;
+  size_t len = server_socket->receive_from(
+    boost::asio::buffer(server_recv_buf), sender_endpoint);
+
+  std::cout << "Length received: " << len << std::endl;
+
 }

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 project(TrackerProxy)
 
 # Setup boost dependency
-find_package(Boost 1.54 COMPONENTS system REQUIRED)
+find_package(Boost 1.54 COMPONENTS system thread REQUIRED)
 set(Boost_USE_STATIC_LIBS ON) # link statically to boost
 
 if (Boost_FOUND)
