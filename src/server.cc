@@ -20,31 +20,43 @@
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
-  
-*/
 
-#include <iostream>
-#include <memory>
+*/
 
 #include "server.h"
 
-#define SERVER_PORT 8081
-
-using boost::asio::ip::udp;
-
-int main()
+Server::Server(std::shared_ptr<boost::asio::io_service> service,
+               unsigned short port) :
+  socket(*service, udp::endpoint(udp::v4(), port))
 {
-  try {
-    std::shared_ptr<boost::asio::io_service> io_service;
-    io_service = std::make_shared<boost::asio::io_service>();
+  this->io_service = service;
+  this->port = port;
 
-    Server server = Server(io_service, SERVER_PORT);
+}
 
-    server.start();
+void Server::start()
+{
+  accept_connection();
+}
 
-    io_service->run();
-  } catch(std::exception& e) {
-    std::cout << e.what() << std::endl;
-  }
-  return 0;
+void Server::accept_connection()
+{
+  this->socket.async_receive_from(boost::asio::buffer(this->recv_buf),
+                                  this->remote_endpoint,
+                                  boost::bind<void>(&Server::handle_connection, this,
+                                                    boost::asio::placeholders::error,
+                                                    boost::asio::placeholders::bytes_transferred));
+}
+
+void Server::handle_connection(const boost::system::error_code& error,
+                               std::size_t bytes_read)
+{
+  std::string data;
+  std::copy(this->recv_buf.begin(), this->recv_buf.begin() + bytes_read,
+            std::back_inserter(data));
+  
+  std::cout << "Got Connection with data: " << data << std::endl;
+
+  // continue accepting connections
+  this->accept_connection();
 }

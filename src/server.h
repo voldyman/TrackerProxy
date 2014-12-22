@@ -20,31 +20,39 @@
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
-  
+
 */
 
-#include <iostream>
+#ifndef SERVER_H
+#define SERVER_H
+
 #include <memory>
 
-#include "server.h"
-
-#define SERVER_PORT 8081
+#include <boost/asio.hpp>
+#include <boost/array.hpp>
+#include <boost/bind.hpp>
 
 using boost::asio::ip::udp;
 
-int main()
-{
-  try {
+class Server {
+  private:
     std::shared_ptr<boost::asio::io_service> io_service;
-    io_service = std::make_shared<boost::asio::io_service>();
+    udp::socket socket;
+    unsigned short port;
 
-    Server server = Server(io_service, SERVER_PORT);
+    udp::endpoint remote_endpoint;
+    boost::array<char, 1024> recv_buf;
 
-    server.start();
+  public:
+    Server(std::shared_ptr<boost::asio::io_service> service,
+           unsigned short port);
+    void start();
 
-    io_service->run();
-  } catch(std::exception& e) {
-    std::cout << e.what() << std::endl;
-  }
-  return 0;
-}
+  private:
+    void accept_connection();
+    void handle_connection(const boost::system::error_code& error,
+                           std::size_t bytes_read);
+
+};
+
+#endif

@@ -16,7 +16,8 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 set(TrackerProxy_SOURCES
-  src/main.cc)
+  src/main.cc
+  src/server.cc)
 
 add_executable(TrackerProxy ${TrackerProxy_SOURCES})
 
